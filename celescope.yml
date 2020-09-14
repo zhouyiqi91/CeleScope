@@ -1,4 +1,4 @@
-name: celescope
+name: celescope_release
 channels:
   - conda-forge
   - bioconda
