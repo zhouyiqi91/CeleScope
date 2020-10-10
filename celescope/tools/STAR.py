@@ -75,6 +75,21 @@ def format_stat(map_log, region_log, samplename):
 
 
 @log
+def ribo(fq, outdir, sample):
+    import celescope
+    root_path = os.path.dirname(celescope.__file__)
+    human_ribo_fa = f'{root_path}/data/rRNA/human_ribo.fasta'
+    out_log = f'{outdir}/{sample}_ribo_log.txt'
+    cmd = (
+        f'bbduk.sh '
+        f'in1={fq} '
+        f'ref={human_ribo_fa} '
+        f'> {out_log} 2>&1 '
+    )
+    os.system(cmd)
+    
+
+@log
 def STAR(args):
     # check
     refFlat, gtf = glob_genomeDir(args.genomeDir)
@@ -141,6 +156,7 @@ def get_opts_STAR(parser, sub_program):
         parser.add_argument('--sample', help='sample name', required=True)
         parser.add_argument('--thread', default=1)
         parser.add_argument('--assay', help='assay', required=True)
+        parser.add_argument('--debug', help='debug', action='store_true')
     parser.add_argument(
         '--out_unmapped',
         help='out_unmapped',
