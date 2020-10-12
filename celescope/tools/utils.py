@@ -80,7 +80,7 @@ def read_barcode_file(match_dir):
 
 def format_stat(count, total_count):
     percent = round(count / total_count * 100, 2)
-    string = f'{count}({percent}%)'
+    string = f'{format_number(count)}({percent}%)'
     return string
 
 

@@ -8,150 +8,194 @@ import json
 import logging
 import subprocess
 import glob
-from celescope.tools.utils import format_number, log
+import pandas as pd
+from celescope.tools.utils import format_number, log, format_stat
 from celescope.tools.utils import glob_genomeDir
 from celescope.tools.report import reporter
 
+class Step_mapping():
 
-def format_stat(map_log, region_log, samplename):
-    fh1 = open(map_log, 'r')
-    p1 = re.compile(r'Uniquely mapped reads number\s+(\d+)')
-    UNIQUE_READS = []
-    MULTI_MAPPING_READS = []
-    for line in fh1:
-        if line.strip() == '':
-            continue
-        if re.search(r'Uniquely mapped reads', line):
-            UNIQUE_READS.append(line.strip().split()[-1])
-        if re.search(r'of reads mapped to too many loci', line):
-            MULTI_MAPPING_READS.append(line.strip().split()[-1])
+    def __init__(self, sample, outdir, assay, thread, fq, genomeDir, out_unmapped, debug):
+        self.sample = sample
+        self.outdir = outdir
+        self.assay = assay
+        self.thread = thread
+        self.fq = fq
+        self.genomeDir = genomeDir
+        self.out_unmapped = out_unmapped
+        self.debug = debug
+        self.refFlat, self.gtf = glob_genomeDir(genomeDir)
+        if not os.path.exists(outdir):
+            os.system('mkdir -p %s' % (outdir))
+        self.stats = pd.Series()
+        self.stats_file = f'{outdir}/stat.txt'
 
-    fh2 = open(region_log, 'r')
-    region_dict = {}
-    while True:
-        line = fh2.readline()
-        if not line:
-            break
-        if line.startswith('## METRICS CLASS'):
-            header = fh2.readline().strip().split('\t')
-            data = fh2.readline().strip().split('\t')
-            region_dict = dict(zip(header, data))
-            break
+    def format_stat(self):
+        fh1 = open(self.STAR_map_log, 'r')
+        UNIQUE_READS = []
+        MULTI_MAPPING_READS = []
+        for line in fh1:
+            if line.strip() == '':
+                continue
+            if re.search(r'Uniquely mapped reads', line):
+                UNIQUE_READS.append(line.strip().split()[-1])
+            if re.search(r'of reads mapped to too many loci', line):
+                MULTI_MAPPING_READS.append(line.strip().split()[-1])
+        fh1.close()
 
-    Total = float(region_dict['PF_ALIGNED_BASES'])
-    Exonic_Regions = int(region_dict['UTR_BASES']) + \
-        int(region_dict['CODING_BASES'])
-    Intronic_Regions = int(region_dict['INTRONIC_BASES'])
-    Intergenic_Regions = int(region_dict['INTERGENIC_BASES'])
+        fh2 = open(self.picard_region_log, 'r')
+        region_dict = {}
+        while True:
+            line = fh2.readline()
+            if not line:
+                break
+            if line.startswith('## METRICS CLASS'):
+                header = fh2.readline().strip().split('\t')
+                data = fh2.readline().strip().split('\t')
+                region_dict = dict(zip(header, data))
+                break
+        fh2.close()
+        
+        Total = float(region_dict['PF_ALIGNED_BASES'])
+        Exonic_Regions = int(region_dict['UTR_BASES']) + \
+            int(region_dict['CODING_BASES'])
+        Intronic_Regions = int(region_dict['INTRONIC_BASES'])
+        Intergenic_Regions = int(region_dict['INTERGENIC_BASES'])
 
-    region_dict['Exonic_Regions'] = "{}({:.2%})".format(
-        format_number(Exonic_Regions), Exonic_Regions / Total)
-    region_dict['Intronic_Regions'] = "{}({:.2%})".format(
-        format_number(Intronic_Regions), Intronic_Regions / Total)
-    region_dict['Intergenic_Regions'] = "{}({:.2%})".format(
-        format_number(Intergenic_Regions), Intergenic_Regions / Total)
+        region_dict['Exonic_Regions'] = "{}({:.2%})".format(
+            format_number(Exonic_Regions), Exonic_Regions / Total)
+        region_dict['Intronic_Regions'] = "{}({:.2%})".format(
+            format_number(Intronic_Regions), Intronic_Regions / Total)
+        region_dict['Intergenic_Regions'] = "{}({:.2%})".format(
+            format_number(Intergenic_Regions), Intergenic_Regions / Total)
 
-    with open(os.path.dirname(map_log) + '/stat.txt', 'w') as stat_fh:
-        stat_fh.write('%s: %s(%s)\n' % ('Uniquely Mapped Reads',
-                                        format_number(int(UNIQUE_READS[0])), UNIQUE_READS[1]))
-        stat_fh.write('%s: %s(%s)\n' % ('Multi-Mapped Reads',
-                                        format_number(
-                                            int(MULTI_MAPPING_READS[0])),
-                                        MULTI_MAPPING_READS[1]))
-        stat_fh.write(
-            '%s: %s\n' %
-            ('Base Pairs Mapped to Exonic Regions',
-             region_dict['Exonic_Regions']))
-        stat_fh.write(
-            '%s: %s\n' %
-            ('Base Pairs Mapped to Intronic Regions',
-             region_dict['Intronic_Regions']))
-        stat_fh.write(
-            '%s: %s\n' %
-            ('Base Pairs Mapped to Intergenic Regions',
-             region_dict['Intergenic_Regions']))
-    return {'region_labels': ['Exonic Regions', 'Intronic Regions', 'Intergenic Regions'],
-            'region_values': [Exonic_Regions, Intronic_Regions, Intergenic_Regions]}
+        self.stats = self.stats.append(pd.Series(
+            f'{format_number(int(UNIQUE_READS[0]))}({UNIQUE_READS[1]})',
+            index=['Uniquely Mapped Reads']
+        ))
+        self.stats = self.stats.append(pd.Series(
+            f'{format_number(int(MULTI_MAPPING_READS[0]))}({MULTI_MAPPING_READS[1]})',
+            index=['Multi-Mapped Reads']
+        ))
+        # ribo
+        if self.debug:
+            f = open(self.ribo_log, 'r')
+            for line in f:
+                if line.find('#Matched') != -1:
+                    items = line.split()
+                    Reads_Mapped_to_rRNA = int(items[1])
+                if line.find('#Total') != -1:
+                    items = line.split()
+                    Reads_Total = int(items[1])
+
+            self.stats = self.stats.append(pd.Series(
+                format_stat(Reads_Mapped_to_rRNA, Reads_Total),
+                index=['Reads Mapped to rRNA']
+            ))
+            f.close()
+
+        self.stats = self.stats.append(pd.Series(
+            region_dict['Exonic_Regions'],
+            index=['Base Pairs Mapped to Exonic Regions']
+        ))
+        self.stats = self.stats.append(pd.Series(
+            region_dict['Intronic_Regions'],
+            index=['Base Pairs Mapped to Intronic Regions']
+        ))
+        self.stats = self.stats.append(pd.Series(
+            region_dict['Intergenic_Regions'],
+            index=['Base Pairs Mapped to Intergenic Regions']
+        ))
+        self.plot = {'region_labels': ['Exonic Regions', 'Intronic Regions', 'Intergenic Regions'],
+                'region_values': [Exonic_Regions, Intronic_Regions, Intergenic_Regions]}   
 
 
-@log
-def ribo(fq, outdir, sample):
-    import celescope
-    root_path = os.path.dirname(celescope.__file__)
-    human_ribo_fa = f'{root_path}/data/rRNA/human_ribo.fasta'
-    out_log = f'{outdir}/{sample}_ribo_log.txt'
-    cmd = (
-        f'bbduk.sh '
-        f'in1={fq} '
-        f'ref={human_ribo_fa} '
-        f'> {out_log} 2>&1 '
-    )
-    os.system(cmd)
+        self.stats.to_csv(self.stats_file, sep=':', header=False)
+
+    @log
+    def ribo(self):
+        import celescope
+        root_path = os.path.dirname(celescope.__file__)
+        human_ribo_fa = f'{root_path}/data/rRNA/human_ribo.fasta'
+        self.ribo_log = f'{self.outdir}/{self.sample}_ribo_log.txt'
+        self.ribo_run_log = f'{self.outdir}/{self.sample}_ribo_run.log'
+        cmd = (
+            f'bbduk.sh '
+            f'in1={self.fq} '
+            f'ref={human_ribo_fa} '
+            f'stats={self.ribo_log} '
+            f'overwrite=t '
+            f'> {self.ribo_run_log} 2>&1 '
+        )
+        Step_mapping.ribo.logger.info(cmd)
+        subprocess.check_call(cmd, shell=True)
     
+    @log
+    def STAR(self):
+        self.outPrefix = f'{self.outdir}/{self.sample}_'
+        self.STAR_bam = f'{self.outdir}/{self.sample}_Aligned.sortedByCoord.out.bam'
+        self.STAR_map_log = f'{self.outdir}/{self.sample}_Log.final.out'    
+        cmd = ['STAR', '--runThreadN', str(self.thread), '--genomeDir', self.genomeDir,
+            '--readFilesIn', self.fq, '--readFilesCommand', 'zcat', '--outFilterMultimapNmax',
+            '1', '--outFileNamePrefix', self.outPrefix, '--outSAMtype', 'BAM', 'SortedByCoordinate']
+        if self.out_unmapped:
+            cmd += ['--outReadsUnmapped', 'Fastx']
+        subprocess.check_call(cmd)
 
-@log
+    @log
+    def picard(self):
+        self.picard_region_log = f'{self.outdir}/{self.sample}_region.log'
+        cmd = [
+            'picard',
+            '-Xmx4G',
+            '-XX:ParallelGCThreads=4',
+            'CollectRnaSeqMetrics',
+            'I=%s' %
+            (self.STAR_bam),
+            'O=%s' %
+            (self.picard_region_log),
+            'REF_FLAT=%s' %
+            (self.refFlat),
+            'STRAND=NONE',
+            'VALIDATION_STRINGENCY=SILENT']
+        res = subprocess.run(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+
+    @log
+    def run(self):
+        self.STAR()
+        self.picard()
+        if self.debug:
+            self.ribo()
+        self.format_stat()
+        self.report()
+    
+    def report(self):
+        t = reporter(
+            name='STAR',
+            assay=self.assay,
+            sample=self.sample,
+            stat_file=self.stats_file,
+            outdir=self.outdir + '/..',
+            plot=self.plot)
+        t.get_report()
+
+
 def STAR(args):
-    # check
-    refFlat, gtf = glob_genomeDir(args.genomeDir)
-
-    # check dir
-    if not os.path.exists(args.outdir):
-        os.system('mkdir -p %s' % (args.outdir))
-
-    # run STAR
-    outPrefix = args.outdir + '/' + args.sample + '_'
-    outBam = args.outdir + '/' + args.sample + '_'
-    # cmd = ['STAR', '--runThreadN', str(args.thread), '--genomeDir', args.genomeDir, '--readFilesIn', args.fq, '--readFilesCommand', 'zcat', '--outFilterMultimapNmax', '1', '--outReadsUnmapped', 'Fastx', '--outFileNamePrefix', outPrefix, '--outSAMtype', 'BAM', 'SortedByCoordinate']
-    cmd = ['STAR', '--runThreadN', str(args.thread), '--genomeDir', args.genomeDir,
-           '--readFilesIn', args.fq, '--readFilesCommand', 'zcat', '--outFilterMultimapNmax',
-           '1', '--outFileNamePrefix', outPrefix, '--outSAMtype', 'BAM', 'SortedByCoordinate']
-    if args.out_unmapped:
-        cmd += ['--outReadsUnmapped', 'Fastx']
-    STAR.logger.info('%s' % (' '.join(cmd)))
-    subprocess.check_call(cmd)
-
-    STAR.logger.info('picard start...')
-    outBam = outPrefix + 'Aligned.sortedByCoord.out.bam'
-    region_txt = args.outdir + '/' + args.sample + '_region.log'
-    cmd = [
-        'picard',
-        '-Xmx4G',
-        '-XX:ParallelGCThreads=4',
-        'CollectRnaSeqMetrics',
-        'I=%s' %
-        (outBam),
-        'O=%s' %
-        (region_txt),
-        'REF_FLAT=%s' %
-        (refFlat),
-        'STRAND=NONE',
-        'VALIDATION_STRINGENCY=SILENT']
-    STAR.logger.info('%s' % (' '.join(cmd)))
-    res = subprocess.run(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-    STAR.logger.info(res.stdout)
-    STAR.logger.info('picard done.')
-
-    plot = format_stat(
-        args.outdir +
-        '/' +
-        args.sample +
-        '_Log.final.out',
-        region_txt,
-        args.sample)
-    t = reporter(
-        name='STAR',
-        assay=args.assay,
-        sample=args.sample,
-        stat_file=args.outdir + '/stat.txt',
-        outdir=args.outdir + '/..',
-        plot=plot)
-    t.get_report()
+    mapping = Step_mapping(
+        args.sample, 
+        args.outdir, 
+        args.assay, 
+        args.thread,
+        args.fq, 
+        args.genomeDir, 
+        args.out_unmapped, 
+        args.debug)
+    mapping.run()
 
 
 def get_opts_STAR(parser, sub_program):
     if sub_program:
         parser.add_argument('--fq', required=True)
-        parser.add_argument('--readFilesCommand', default='zcat')
         parser.add_argument('--outdir', help='output dir', required=True)
         parser.add_argument('--sample', help='sample name', required=True)
         parser.add_argument('--thread', default=1)
