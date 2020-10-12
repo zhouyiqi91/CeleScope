@@ -42,7 +42,8 @@ def main():
     mod = args.mod
     rm_files = args.rm_files
     debug_str = '--debug'
-
+    outFilterMatchNmin = args.outFilterMatchNmin
+    
     # parse mapfile
     fq_dict, cells_dict = parse_map_col4(args.mapfile, "auto")
 
@@ -126,6 +127,7 @@ def main():
             f'--genomeDir {genomeDir} --thread {thread} ' 
             f'--outdir {outdir_dic[step]} --assay {assay} '
             f'{debug_str} '
+            f'--outFilterMatchNmin {outFilterMatchNmin} '
         )
         sjm_cmd += generate_sjm(cmd, f'{step}_{sample}', conda, m=starMem, x=thread)
         sjm_order += f'order {step}_{sample} after {last_step}_{sample}\n'

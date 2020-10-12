@@ -140,6 +140,7 @@ def multi_opts(assay):
         help='remove redundant fq.gz and bam after running')
     parser.add_argument('--steps_run', help='steps to run', default='all')
     parser.add_argument('--debug', help='debug or not', action='store_true')
+    parser.add_argument('--outFilterMatchNmin', help='STAR outFilterMatchNmin', default=0)
     return parser
 
 

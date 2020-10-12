@@ -15,7 +15,7 @@ from celescope.tools.report import reporter
 
 class Step_mapping():
 
-    def __init__(self, sample, outdir, assay, thread, fq, genomeDir, out_unmapped, debug):
+    def __init__(self, sample, outdir, assay, thread, fq, genomeDir, out_unmapped, debug, outFilterMatchNmin):
         self.sample = sample
         self.outdir = outdir
         self.assay = assay
@@ -24,6 +24,7 @@ class Step_mapping():
         self.genomeDir = genomeDir
         self.out_unmapped = out_unmapped
         self.debug = debug
+        self.outFilterMatchNmin = outFilterMatchNmin
         self.refFlat, self.gtf = glob_genomeDir(genomeDir)
         if not os.path.exists(outdir):
             os.system('mkdir -p %s' % (outdir))
@@ -137,7 +138,8 @@ class Step_mapping():
         self.STAR_map_log = f'{self.outdir}/{self.sample}_Log.final.out'    
         cmd = ['STAR', '--runThreadN', str(self.thread), '--genomeDir', self.genomeDir,
             '--readFilesIn', self.fq, '--readFilesCommand', 'zcat', '--outFilterMultimapNmax',
-            '1', '--outFileNamePrefix', self.outPrefix, '--outSAMtype', 'BAM', 'SortedByCoordinate']
+            '1', '--outFileNamePrefix', self.outPrefix, '--outSAMtype', 'BAM', 'SortedByCoordinate',
+            '--outFilterMatchNmin', self.outFilterMatchNmin]
         if self.out_unmapped:
             cmd += ['--outReadsUnmapped', 'Fastx']
         subprocess.check_call(cmd)
@@ -189,7 +191,8 @@ def STAR(args):
         args.fq, 
         args.genomeDir, 
         args.out_unmapped, 
-        args.debug)
+        args.debug,
+        args.outFilterMatchNmin)
     mapping.run()
 
 
@@ -201,6 +204,7 @@ def get_opts_STAR(parser, sub_program):
         parser.add_argument('--thread', default=1)
         parser.add_argument('--assay', help='assay', required=True)
         parser.add_argument('--debug', help='debug', action='store_true')
+    parser.add_argument('--outFilterMatchNmin', help='STAR outFilterMatchNmin', default=0)
     parser.add_argument(
         '--out_unmapped',
         help='out_unmapped',

@@ -40,6 +40,7 @@ def main():
     lowNum = args.lowNum
     mod = args.mod
     rm_files = args.rm_files
+    outFilterMatchNmin = args.outFilterMatchNmin
 
     # parse mapfile
     fq_dict, match_dict = parse_map_col4(args.mapfile, None)
@@ -120,6 +121,7 @@ def main():
             f'--fq {fq} --sample {sample} '
             f'--genomeDir {genomeDir} --thread {thread} ' 
             f'--outdir {outdir_dic[step]} --assay {assay} '
+            f'--outFilterMatchNmin {outFilterMatchNmin} '
         )
         sjm_cmd += generate_sjm(cmd, f'{step}_{sample}', conda, m=starMem, x=thread)
         sjm_order += f'order {step}_{sample} after {last_step}_{sample}\n'
