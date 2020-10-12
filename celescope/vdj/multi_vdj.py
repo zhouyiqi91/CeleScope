@@ -21,7 +21,6 @@ def main():
     # parser
     parser = multi_opts(assay)
     parser.add_argument("--type", help='TCR or BCR', required=True)
-    parser.add_argument("--debug", action='store_true')
     parser.add_argument(
         '--iUMI', help='minimum number of UMI of identical receptor type and CDR3', default=1)
     parser.add_argument('--thread', help='thread', default=6)
