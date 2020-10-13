@@ -460,6 +460,11 @@ def main():
     get_opts_snpCalling(parser_snpCalling, True)
     parser_snpCalling.set_defaults(func=snpCalling)
 
+    from celescope.snp.analysis_snp import analysis_snp, get_opts_analysis_snp
+    parser_analysis_snp = subparsers_snp.add_parser('analysis_snp')
+    get_opts_analysis_snp(parser_analysis_snp, True)
+    parser_analysis_snp.set_defaults(func=analysis_snp)
+
     args = parser.parse_args()
     args.func(args)
 

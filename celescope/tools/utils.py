@@ -9,10 +9,12 @@ import numpy as np
 import subprocess
 import time
 import argparse
+import pysam
 from datetime import timedelta
 from collections import defaultdict
 from functools import wraps
 from collections import Counter
+import json
 import celescope.tools
 import matplotlib
 matplotlib.use('Agg')
@@ -624,9 +626,70 @@ def downsample(bam, barcodes, percent):
         percent, median_geneNum, saturation), saturation
 
 
-if __name__ == '__main__':
+def cluster_tsne_list(tsne_df):
+    """
+    tSNE_1	tSNE_2	cluster Gene_Counts
+    return data list
+    """
+    sum_df = tsne_df.groupby(["cluster"]).agg("count").iloc[:, 0]
+    percent_df = sum_df.transform(lambda x: round(x / sum(x) * 100, 2))
+    res = []
+    for cluster in sorted(tsne_df.cluster.unique()):
+        sub_df = tsne_df[tsne_df.cluster == cluster]
+        name = "cluster {cluster}({percent}%)".format(
+            cluster=cluster, percent=percent_df[cluster])
+        tSNE_1 = list(sub_df.tSNE_1)
+        tSNE_2 = list(sub_df.tSNE_2)
+        res.append({"name": name, "tSNE_1": tSNE_1, "tSNE_2": tSNE_2})
+    return res
 
-    df = pd.read_table('SRR6954578_counts.txt', header=0)
-    barcode_filter_with_magnitude(df)
-    barcode_filter_with_kde(df)
-    barcode_filter_with_derivative(df)
+
+def marker_table(marker_df):
+    """
+    return html code
+    """
+    marker_df = marker_df.loc[:, ["cluster", "gene",
+                                  "avg_logFC", "pct.1", "pct.2", "p_val_adj"]]
+    marker_gene_table = marker_df.to_html(
+        escape=False,
+        index=False,
+        table_id="marker_gene_table",
+        justify="center")
+    return marker_gene_table
+
+
+def report_prepare(outdir, **kwargs):
+    json_file = outdir + '/../.data.json'
+    if not os.path.exists(json_file):
+        data = {}
+    else:
+        fh = open(json_file)
+        data = json.load(fh)
+        fh.close()
+
+    for key in kwargs:
+        data[key] = kwargs[key]
+
+    with open(json_file, 'w') as fh:
+        json.dump(data, fh)
+
+
+def parse_vcf(vcf_file, cols=['chrom', 'pos', 'alleles'], infos=['DP', 'GENE', 'CELL']):
+    vcf = pysam.VariantFile(vcf_file)
+    df = pd.DataFrame(columns=[col.upper() for col in cols] + infos + ['GT'])
+    rec_dict = {}
+    for rec in vcf.fetch():
+
+        for col in cols:
+            rec_dict[col.upper()] = getattr(rec, col)
+            if col == 'alleles':
+                rec_dict['ALLELES'] = '-'.join(rec_dict['ALLELES'])
+                
+        for info in infos:
+            rec_dict[info] = rec.info[info]
+
+        rec_dict['GT'] = [s['GT'] for s in rec.samples.values()][0]
+
+        df = df.append(pd.Series(rec_dict),ignore_index=True)
+    return df
+
