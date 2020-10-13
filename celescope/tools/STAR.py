@@ -139,9 +139,10 @@ class Step_mapping():
         cmd = ['STAR', '--runThreadN', str(self.thread), '--genomeDir', self.genomeDir,
             '--readFilesIn', self.fq, '--readFilesCommand', 'zcat', '--outFilterMultimapNmax',
             '1', '--outFileNamePrefix', self.outPrefix, '--outSAMtype', 'BAM', 'SortedByCoordinate',
-            '--outFilterMatchNmin', self.outFilterMatchNmin]
+            '--outFilterMatchNmin', str(self.outFilterMatchNmin)]
         if self.out_unmapped:
             cmd += ['--outReadsUnmapped', 'Fastx']
+        Step_mapping.STAR.logger.info(' '.join(cmd))
         subprocess.check_call(cmd)
 
     @log
