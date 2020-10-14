@@ -290,14 +290,14 @@ def summary(index_file, count_file, outdir, sample):
 
     stats = stats.append(pd.Series(
         format_stat(Number_of_Match_Cells_with_SNP, n_match_cell),
-        index=['Number of Cells with SNP']
+        index=['Number of Cells with Variants']
     ))
 
     SNP_counts = list(SNP_count_dict.values())
     Mean_SNP_per_Cell = round(np.mean(SNP_counts), 3)
     stats = stats.append(pd.Series(
         Mean_SNP_per_Cell,
-        index=['Mean SNPs per Cell with SNP']
+        index=['Mean Variants per Cell with Variants']
     ))
 
     stat_file = f'{outdir}/stat.txt'

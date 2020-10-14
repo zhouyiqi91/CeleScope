@@ -43,10 +43,11 @@ class test_snp(unittest.TestCase):
             bam, barcodes, self.outdir,
             self.sample, gene_id_name_dic, min_query_length)
     
-    @unittest.skip('pass')
+    #@unittest.skip('pass')
     def test_summary(self):
         summary(self.index_file, self.count_file, self.outdir, self.sample)
 
+    @unittest.skip('pass')
     def test_index(self):
         index_file = '/SGRNJ02/RandD4/RD20051303_Panel/20200929/S20070817_TS/05.snpCalling/S20070817_TS_cell_index.tsv'
         df_index, df_valid = read_index(index_file)

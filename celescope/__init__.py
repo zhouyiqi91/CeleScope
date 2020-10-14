@@ -11,5 +11,5 @@ ASSAY_DICT = {
     'mut': 'Single Cell Insertion and Deletion',
     'hla': 'Single Cell HLA',
     'capture_rna': 'Single Cell Capture RNA',
-    'snp': 'Single Cell SNP',
+    'snp': 'Single Cell Variant',
 }

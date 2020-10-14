@@ -1,12 +1,12 @@
     <div class="abc" style="float: left; margin-left: 15%; margin-right:15%; width: 70%" >
-      <h2>SNP Calling   <i class="fa fa-question-circle" onClick="toggle1(this)" style="cursor:pointer;"></i></h2>
+      <h2>Variant Calling   <i class="fa fa-question-circle" onClick="toggle1(this)" style="cursor:pointer;"></i></h2>
 
       <div class="box">
         <div class="description" style="display: none;">
           <p><b>Mean Reads per Cell</b> : number of reads mapped to given genes divided by number of match cells.</p>
           <p><b>Mean UMIs per Cell</b> : number of UMIs mapped to given genes divided by number of match cells.</p>
-          <p><b>Number of Cells with SNP</b> : number of match cells with as least 1 SNP.</p>
-          <p><b>Mean SNPs per Cell with SNP</b> : number of total SNPs divided by number of cells with SNP.</p>
+          <p><b>Number of Cells with Variants</b> : number of match cells with as least 1 variant.</p>
+          <p><b>Mean Variants per Cell with Variants</b> : number of total SNPs divided by number of cells with variant.</p>
         </div>
         <table style="float: left; margin-left: 0%; margin-right:3%; width: 47%">
           {% for item in snpCalling_summary %}
