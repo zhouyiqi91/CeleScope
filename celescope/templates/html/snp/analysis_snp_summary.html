@@ -1,0 +1,149 @@
+
+<link rel="stylesheet" type="text/css"  href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" />
+<link rel="stylesheet" type="text/css"  href="https://cdn.datatables.net/buttons/1.4.0/css/buttons.dataTables.min.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.27/build/pdfmake.min.js"></script>
+<script src="https://cdn.rawgit.com/bpampuch/pdfmake/0.1.27/build/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.4.0/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.4.0/js/buttons.flash.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.4.0/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.4.0/js/buttons.print.min.js"></script>  
+
+<link rel="stylesheet" type="text/css" href="code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"> 
+
+<script>
+    $(document).ready(function () {
+            var table = $('#variant_table').DataTable({
+                dom: 'Bfrtip',
+                buttons: ['excel', 'pdf']
+            });
+            table.columns(-1).order('desc').draw();
+    });
+</script>
+
+<div class="abc" style="float: left; margin-left: 15%; margin-right:15%; width: 70%" >
+    <h2>Analysis   <i class="fa fa-question-circle" onClick="toggle1(this)" style="cursor:pointer;"></i></h2>
+    <div class="box">
+        <div class="description" style="display: none;">
+            <p><b>Variants Table</b></p>
+            <p> CHROM : chromosome name.</p>
+            <p> POS : the 1-based position of the variation on the given sequence..</p>
+            <p> GENE : gene symbol.</p>
+            <p> ALLELES : REF(reference base or bases in the case of an indel) - ALT(alternative alleles).</p>
+            <p> DP : depth.</p>
+            <p> GT : genotype.</p>
+            <p> CELL_INDEX : match cell index.</p>
+            <p> CLUSTER : match cell cluster.</p>
+            <p> NCELL : number of match cell.</p>
+        </div>
+      <div id="cluster_tsne" style="float: left; margin-left: 3%; margin-top: 1%;margin-right:0%; width: 47%">
+        <script>
+            var data = []
+            {% for cluster_item in cluster_tsne %}
+                var x_coord = {{cluster_item["tSNE_1"]}};
+                var y_coord = {{cluster_item["tSNE_2"]}};
+                var trace = {
+                    x: x_coord,
+                    y: y_coord,
+                    name: '{{cluster_item["name"]}}',
+                    mode: 'markers',
+                    marker: {"opacity": 0.9, "size": 4},
+                }
+                data.push(trace);
+            {% endfor %}
+
+            var layout = {
+
+                hovermode:"closest", 
+                title: 't-SNE plot Colored by Clusters', 
+                xaxis: {
+                    zeroline: true,
+                    showline: false,
+                    type: "linear",
+                    title: "t-SNE1"
+                },
+                yaxis: {
+                    zeroline: true,
+                    showline: false,
+                    type: "linear",
+                    title: "t-SNE2"
+                },
+            }
+
+            var config = { 
+                "displayModeBar": true, 
+                "staticPlot": false, 
+                "showAxisDragHandles": false, 
+                "modeBarButtons": [["toImage", "resetScale2d"]], 
+                "scrollZoom": false,
+                "displaylogo": false, 
+            }
+            Plotly.newPlot('cluster_tsne', data, layout, config);
+        </script>       
+      </div>
+
+      <div id="count_tsne" style="float: left; margin-left: 3%; margin-top: 1%;margin-right:0%; width: 47%">
+        <script>
+            var data = []
+            var x_coord = {{count_tsne["tSNE_1"]|safe}};
+            var y_coord = {{count_tsne["tSNE_2"]|safe}};
+            var trace = {
+                x: x_coord,
+                y: y_coord,
+                text: {{count_tsne["text"]|safe}},
+                mode: 'markers',
+                marker: { 
+                    "opacity": 0.9, 
+                    "size": 4,
+                    "color":{{count_tsne["value"]|safe}},
+                    "colorscale": "Jet", 
+                    "colorbar": {"title": "Cell Variants Counts"},
+                },
+            }
+            data.push(trace);
+
+            var layout = {
+
+                hovermode:"closest", 
+                title: '{{count_tsne["title"]}}', 
+                xaxis: {
+                    zeroline: true,
+                    showline: false,
+                    type: "linear",
+                    title: "t-SNE1"
+                },
+                yaxis: {
+                    zeroline: true,
+                    showline: false,
+                    type: "linear",
+                    title: "t-SNE2"
+                },
+            }
+
+            var config = { 
+                "displayModeBar": true, 
+                "staticPlot": false, 
+                "showAxisDragHandles": false, 
+                "modeBarButtons": [["toImage", "resetScale2d"]], 
+                "scrollZoom": false,
+                "displaylogo": false, 
+            }
+            Plotly.newPlot('count_tsne', data, layout, config);
+        </script>       
+      </div>
+      
+      <hr />
+
+        <h3>{{variant_table['title'] | safe}}</h3>
+        <div style=" margin-left: 3%; margin-right:3%;">
+            {{variant_table['table'] | safe}}
+        </div>
+        
+
+
+      <div class="clear" ></div>
+    </div>
+  </div>

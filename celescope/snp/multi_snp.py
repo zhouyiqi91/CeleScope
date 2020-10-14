@@ -167,6 +167,24 @@ def main():
             shell_dict[sample] += cmd + '\n'
             last_step = step
 
+        # analysis_snp
+        step = 'analysis_snp'
+        vcf_anno = f'{outdir_dic["snpCalling"]}/{sample}_anno.vcf'
+        index_file = f'{outdir_dic["snpCalling"]}/{sample}_cell_index.tsv'
+        cmd = (
+            f'{app} {assay} {step} '
+            f'--sample {sample} '
+            f'--outdir {outdir_dic[step]} --assay {assay} '
+            f'--match_dir {match_dict[sample]} '
+            f'--vcf_anno {vcf_anno} '
+            f'--index_file {index_file} '
+        )
+        if (steps_run == 'all') or (step in steps_run):
+            sjm_cmd += generate_sjm(cmd, f'{step}_{sample}', conda, m=8, x=thread)
+            sjm_order += f'order {step}_{sample} after {last_step}_{sample}\n'
+            shell_dict[sample] += cmd + '\n'
+            last_step = step
+
     # merged report
     if mod == 'sjm':
         step = 'merge_report'
