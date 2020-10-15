@@ -6,25 +6,26 @@ import re
 import numpy as np
 import pandas as pd
 import glob
+import subprocess
+import configparser
 from scipy.io import mmwrite
 from scipy.sparse import csr_matrix
 from celescope.tools.report import reporter
-from celescope.tools.utils import glob_genomeDir, log
+from celescope.tools.utils import glob_genomeDir, log, parse_annovar
 from celescope.tools.utils import cluster_tsne_list, marker_table, report_prepare, parse_vcf
-from celescope.snp.snpCalling import read_index
-import celescope.tools
+from .snpCalling import read_index
 
-toolsdir = os.path.dirname(celescope.tools.__file__)
 
 class analysis_variant():
 
-    def __init__(self, outdir, sample, match_dir, vcf_file, index_file, assay):
+    def __init__(self, outdir, sample, match_dir, vcf_file, index_file, assay, annovar_config):
         self.outdir = outdir
         self.sample = sample
         self.match_dir = match_dir
         self.vcf_file = vcf_file
         self.index_file = index_file 
         self.assay = assay  
+        self.annovar_config = annovar_config
         if not os.path.exists(outdir):
             os.system('mkdir -p %s' % (outdir))
 
@@ -36,19 +37,25 @@ class analysis_variant():
 
         self.cluster_tsne = cluster_tsne_list(self.tsne_df)
 
-    def vcf_data(self):
+    def get_table(self):
         """
-        return data dic
+        Input:
+            self.df_vcf
+            self.index_file
+            self.tsne_df
+        Set Value:
+            self.df_table_full
+            self.df_table
+            self.df_count
         """
         # df_vcf_count
-        df_vcf = parse_vcf(self.vcf_file)
-        df_vcf.index = [int(index) for index in list(df_vcf['CELL'])]
-        df_vcf_count = df_vcf.groupby(['CHROM','POS','ALLELES','GENE']).agg({
+        self.df_vcf.index = [int(index) for index in list(self.df_vcf['CELL'])]
+        df_vcf_count = self.df_vcf.groupby(['CHROM','POS','ALLELES','GENE']).agg({
             'CELL':'count'}).reset_index().sort_values(['CELL'],ascending=False)
 
         # vcf_tsne
         df_index, df_valid = read_index(self.index_file)
-        df_vcf_barcode = pd.merge(df_vcf, df_valid, left_index=True, right_index=True, how="left")
+        df_vcf_barcode = pd.merge(self.df_vcf, df_valid, left_index=True, right_index=True, how="left")
         df_vcf_tsne = pd.merge(df_vcf_barcode, self.tsne_df, on="barcode", how="left")
 
         # df_table
@@ -60,7 +67,7 @@ class analysis_variant():
         self.df_table_full = df_table
         df_table_full_file = f'{self.outdir}/{self.sample}_variant_table.tsv'
         self.df_table_full.to_csv(df_table_full_file, sep='\t')
-        cols = ['CHROM', 'POS', 'GENE', 'ALLELES', 'DP', 'GT', 'INDEX', 'cluster', 'NCELL']
+        cols = ['CHROM', 'POS', 'GENE', 'ALLELES', 'MRNA', 'PROTEIN', 'DP', 'GT', 'INDEX', 'cluster', 'NCELL']
         df_table = df_table.loc[:, cols]
         df_table.rename(columns={'cluster':'CLUSTER'}, inplace=True)
         self.df_table = df_table
@@ -101,8 +108,54 @@ class analysis_variant():
         outdir=self.outdir + '/..')
         t.get_report()
 
+    def annovar(self):
+
+        # config
+        config = configparser.ConfigParser()
+        config.read(self.annovar_config)
+        section = config['ANNOVAR']
+        dir = section['dir']
+        db = section['db']
+        buildver = section['buildver']
+        protocol = section['protocol']
+        operation = section['operation']
+
+        # convert
+        input_file = f'{self.outdir}/{self.sample}.input'
+        cmd = (
+            f'perl {dir}/convert2annovar.pl '
+            f'-format vcf4 '
+            #f'--includeinfo '
+            f'{self.vcf_file} > {input_file}'
+        )
+        subprocess.check_call(cmd, shell=True)
+
+        # annotate
+        cmd = (
+            f'perl {dir}/table_annovar.pl '
+            f'{input_file} '
+            f'{db} '
+            f'-buildver {buildver} '
+            f'-protocol {protocol} '
+            f'-operation {operation} '
+            f'-out {self.outdir}/{self.sample} '
+            f'--otherinfo '
+        )
+        subprocess.check_call(cmd, shell=True)
+
+        # df
+        annovar_file = f'{self.outdir}/{self.sample}.{buildver}_multianno.txt'
+        self.df_annovar = parse_annovar(annovar_file)
+
+    def get_df_vcf(self):
+        self.df_vcf = parse_vcf(self.vcf_file)
+
     def run(self):
-        self.vcf_data()
+        self.get_df_vcf()
+        if self.annovar_config:
+            self.annovar()
+            self.df_vcf = pd.concat((self.df_vcf, self.df_annovar), axis=1)
+        self.get_table()
         self.get_variant_table()
         report_prepare(
             self.outdir,
@@ -120,11 +173,13 @@ def analysis_snp(args):
         args.match_dir,
         args.vcf_anno,
         args.index_file,
-        args.assay
+        args.assay,
+        args.annovar_config,
     )
     step_snp.run()
 
 def get_opts_analysis_snp(parser, sub_program):
+    parser.add_argument('--annovar_config', help='annovar soft config file')
     if sub_program:
         parser.add_argument('--outdir', help='output dir', required=True)
         parser.add_argument('--sample', help='sample name', required=True)

@@ -17,6 +17,7 @@
 <script>
     $(document).ready(function () {
             var table = $('#variant_table').DataTable({
+                "scrollX": true,
                 dom: 'Bfrtip',
                 buttons: ['excel', 'pdf']
             });
@@ -33,9 +34,11 @@
             <p> POS : the 1-based position of the variation on the given sequence..</p>
             <p> GENE : gene symbol.</p>
             <p> ALLELES : REF(reference base or bases in the case of an indel) - ALT(alternative alleles).</p>
+            <p> MRNA :  A standard nomenclature is used in specifying the sequence changes.</p>
+            <p> PROTEIN :  A standard nomenclature is used in specifying the sequence changes.</p>
             <p> DP : depth.</p>
             <p> GT : genotype.</p>
-            <p> CELL_INDEX : match cell index.</p>
+            <p> INDEX : match cell index.</p>
             <p> CLUSTER : match cell cluster.</p>
             <p> NCELL : number of match cell.</p>
         </div>
@@ -100,7 +103,7 @@
                     "size": 4,
                     "color":{{count_tsne["value"]|safe}},
                     "colorscale": "Jet", 
-                    "colorbar": {"title": "Cell Variants Counts"},
+                    "colorbar": {"title": "Cell Variant Counts"},
                 },
             }
             data.push(trace);

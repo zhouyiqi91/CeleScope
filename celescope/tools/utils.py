@@ -691,7 +691,51 @@ def parse_vcf(vcf_file, cols=['chrom', 'pos', 'alleles'], infos=['DP', 'GENE', '
             rec_dict[info] = rec.info[info]
 
         rec_dict['GT'] = [s['GT'] for s in rec.samples.values()][0]
+        rec_dict['GT'] = [str(item) for item in rec_dict['GT']]
+        rec_dict['GT'] = '/'.join(rec_dict['GT'])
 
         df = df.append(pd.Series(rec_dict),ignore_index=True)
     return df
+
+
+def parse_annovar(annovar_file):
+    df = pd.DataFrame(columns=['mRNA', 'protein'])
+    with open(annovar_file, 'rt') as f:
+        index = 0
+        for line in f:
+            index += 1
+            if index == 1:
+                continue
+            attrs = line.split('\t')
+            func = attrs[5]
+            if func == 'exonic':
+                changes = attrs[9]
+            else:
+                changes = attrs[7]
+            change_set = set()
+            for change in changes.split(','):
+                change_attrs = change.split(':')
+                mRNA = ''
+                protein = ''
+                for change_index in range(len(change_attrs)):
+                    change_attr = change_attrs[change_index]
+                    if change_attr.startswith('c.'):
+                        base = change_attr.strip('c.')
+                        exon = change_attrs[change_index - 1]
+                        mRNA = f'{exon}:{base}'
+                    if change_attr.startswith('p.'):
+                        protein = change_attr.strip('p.')
+                change_set.add((mRNA, protein)) 
+            combine = [','.join(item) for item in list(zip(*change_set))]
+            mRNA = combine[0]
+            protein = combine[1]
+            df = df.append({
+                'MRNA': mRNA,
+                'PROTEIN': protein,
+            }, ignore_index=True)
+    return df
+
+
+
+
 
