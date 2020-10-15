@@ -1,8 +1,10 @@
 import unittest
 import os
 import pandas as pd
+import glob
 from celescope.snp.snpCalling import convert, call_all_snp, call_snp, split_bam, summary, read_index
 from celescope.tools.utils import read_barcode_file, glob_genomeDir
+from .analysis_snp import analysis_variant
 
 
 class test_snp(unittest.TestCase):
@@ -13,10 +15,23 @@ class test_snp(unittest.TestCase):
         self.index_file = './S20070818_TS/05.snpCalling/S20070818_TS_cell_index.tsv'
         self.thread = 20
         self.outdir = './S20070818_TS/05.snpCalling/'
+        self.analysis_outdir = './S20070818_TS/06.analysis_snp'
         _refFlat, self.gtf, self.fasta = glob_genomeDir(self.genomeDir, fa=True)
         self.match_dir = '/SGRNJ02/RandD4/RD20051303_Panel/20200717/S20070818_ZL/'
         self.sample = 'S20070818_TS'
         self.count_file = './S20070818_TS/05.snpCalling/S20070818_TS_count.tsv'
+        self.vcf_file = './S20070818_TS/05.snpCalling/S20070818_TS_anno.vcf'
+        self.assay = 'snp'
+        self.annovar_config = '/SGRNJ01/RD_dir/pipeline_test/zhouyiqi/soft/annovar/annovar.config'
+        self.step_analysis_variant = analysis_variant(
+            self.analysis_outdir,
+            self.sample,
+            self.match_dir,
+            self.vcf_file,
+            self.index_file,
+            self.assay,
+            self.annovar_config,
+        )
 
     @unittest.skip('pass')
     def test_convert(self):
@@ -43,7 +58,7 @@ class test_snp(unittest.TestCase):
             bam, barcodes, self.outdir,
             self.sample, gene_id_name_dic, min_query_length)
     
-    #@unittest.skip('pass')
+    @unittest.skip('pass')
     def test_summary(self):
         summary(self.index_file, self.count_file, self.outdir, self.sample)
 
@@ -54,6 +69,16 @@ class test_snp(unittest.TestCase):
         index_arg = df_valid.index
         print(index_arg)
         print(list(index_arg))
+    
+    @unittest.skip('pass')
+    def test_annovar(self):
+        self.step_analysis_variant.annovar()
+    
+    def test_parse_annovar(self):
+        from celescope.tools.utils import parse_annovar
+        self.annovar_file = glob.glob(f'{self.analysis_outdir}/{self.sample}*_multianno.txt')[0]
+        parse_annovar(self.annovar_file)
+
 
 
 if __name__ == '__main__':

@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--thread', help='thread', default=6)
     parser.add_argument('--gene_list', help="gene_list", required=True)
     parser.add_argument('--probe_file', help="probe fasta file")
+    parser.add_argument('--annovar_config', help='annovar soft config file')
     args = parser.parse_args()
 
     # read args
@@ -59,6 +60,7 @@ def main():
     gtf_type = args.gtf_type
     gene_list = args.gene_list
     probe_file = args.probe_file
+    annovar_config = args.annovar_config
 
     # mk log dir
     logdir = outdir + '/log'
@@ -178,6 +180,7 @@ def main():
             f'--match_dir {match_dict[sample]} '
             f'--vcf_anno {vcf_anno} '
             f'--index_file {index_file} '
+            f'--annovar_config {annovar_config} '
         )
         if (steps_run == 'all') or (step in steps_run):
             sjm_cmd += generate_sjm(cmd, f'{step}_{sample}', conda, m=8, x=thread)
