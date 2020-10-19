@@ -113,7 +113,7 @@ def multi_opts(assay):
             'polyT=A{15}',
             'p5=AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC'])
     parser.add_argument(
-        '--minimum-length',
+        '--minimum_length',
         dest='minimum_length',
         help='minimum_length',
         default=20)

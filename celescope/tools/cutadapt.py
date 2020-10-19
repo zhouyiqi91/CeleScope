@@ -96,7 +96,7 @@ def get_opts_cutadapt(parser, sub_program):
             'p5=AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC',
         ])
     parser.add_argument(
-        '--minimum-length',
+        '--minimum_length',
         dest='minimum_length',
         help='minimum_length, default=20',
         default=20)

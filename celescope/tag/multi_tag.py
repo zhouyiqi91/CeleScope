@@ -45,6 +45,7 @@ def main():
     lowNum = args.lowNum
     mod = args.mod
     rm_files = args.rm_files
+    minimum_length = args.minimum_length
 
     # parse mapfile
     fq_dict, match_dict = parse_map_col4(args.mapfile, None)
@@ -113,6 +114,7 @@ def main():
             f'{app} {assay} {step} '
             f'--fq {fq} --sample {sample} --outdir '
             f'{outdir_dic[step]} --assay {assay} '
+            f'--minimum_length {minimum_length} '
         )
         sjm_cmd += generate_sjm(cmd, f'{step}_{sample}', conda, m=5, x=1)
         sjm_order += f'order {step}_{sample} after {last_step}_{sample}\n'
