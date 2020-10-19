@@ -465,6 +465,41 @@ def main():
     get_opts_analysis_snp(parser_analysis_snp, True)
     parser_analysis_snp.set_defaults(func=analysis_snp)
 
+
+    # tag
+    assay = 'tag'
+    text = ASSAY_DICT[assay]
+    subparsers_assay = subparsers.add_parser(
+        assay, help=text, description=text)
+    subparsers_assay_sub = subparsers_assay.add_subparsers()
+
+    parser_tmp = subparsers_assay_sub.add_parser('sample')
+    get_opts_sample(parser_tmp, True)
+    parser_tmp.set_defaults(func=sample_info)
+
+    parser_tmp = subparsers_assay_sub.add_parser('barcode')
+    get_opts_barcode(parser_tmp, True)
+    parser_tmp.set_defaults(func=barcode)
+
+    parser_tmp = subparsers_assay_sub.add_parser('cutadapt')
+    get_opts_cutadapt(parser_tmp, True)
+    parser_tmp.set_defaults(func=cutadapt)
+
+    from celescope.tag.mapping_tag import mapping_tag, get_opts_mapping_tag
+    parser_tmp = subparsers_assay_sub.add_parser('mapping_tag')
+    get_opts_mapping_tag(parser_tmp, True)
+    parser_tmp.set_defaults(func=mapping_tag)
+
+    from celescope.tag.count_tag import count_tag, get_opts_count_tag
+    parser_tmp = subparsers_assay_sub.add_parser('count_tag')
+    get_opts_count_tag(parser_tmp, True)
+    parser_tmp.set_defaults(func=count_tag)
+
+    from celescope.tag.analysis_tag import analysis_tag, get_opts_analysis_tag
+    parser_tmp = subparsers_assay_sub.add_parser('analysis_tag')
+    get_opts_analysis_tag(parser_tmp, True)
+    parser_tmp.set_defaults(func=analysis_tag)
+
     args = parser.parse_args()
     args.func(args)
 

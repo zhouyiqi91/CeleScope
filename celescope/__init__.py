@@ -12,4 +12,5 @@ ASSAY_DICT = {
     'hla': 'Single Cell HLA',
     'capture_rna': 'Single Cell Capture RNA',
     'snp': 'Single Cell Variant',
+    'tag': 'Single Cell tag',
 }

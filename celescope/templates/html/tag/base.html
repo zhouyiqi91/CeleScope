@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,Chrome=1" />
+        <title>report</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> 
+        <script> {% include "./js/jquery.min.js" %} </script>
+        <script> {% include "./js/plotly-latest.min.js" %} </script>
+
+        
+        <script type="text/javascript">
+            
+            function toggle1(node){
+                var helpNode = node.parentNode.parentNode.lastElementChild.firstElementChild;
+                if (helpNode.style.display=="inline"){
+                    helpNode.style.display="none";
+                } else {
+                    helpNode.style.display="inline";
+                }
+            }
+
+        </script>
+        
+        <style>
+            .box {
+                margin-top: 2px;
+                margin-bottom: 2px;
+                width: 100%;
+                background-color: rgba(255,255,255,0.5);
+                padding: 15px 14px;
+                border-radius: 5px;
+                border: 1px solid rgba(0,0,0,0.1);
+  
+            }
+
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                margin-bottom: 1%;
+                border-spacing: 0 2em;
+            }
+
+            th, td {
+                border-bottom: 1px solid #ddd;
+                
+            }
+
+            .box table td:first-child{
+                text-align: left;
+                padding-bottom: 5px;
+            }
+
+            .box table td{
+                text-align: right;
+                padding-top: 5px;
+                padding-bottom: 5px;
+            }
+
+            .logo_container {
+                height: 50px;
+                width: 150px;
+                position: relative;
+            }
+            .description {
+                margin-top: 5px;
+            }
+            .description p{
+                text-align: left;
+                margin-top: 0px;
+                margin-bottom: 0px;
+                line-height: 28px !important;
+                font-size: 18px !important;
+            }
+            .has_desc:after {
+                position: relative;
+                background: rgba(0,0,0,0.1);
+                color: white;
+                width: 18px;
+                height: 18px;
+                border-radius: 18px;
+                cursor: pointer;
+                float: right;
+                text-align: center;
+                line-height: 20px;
+                content: '?';
+            }
+
+            .clear{ clear:both}
+
+            .js-plotly-plot .plotly .modebar {
+                position: absolute;
+                top: 2px;
+                right: 2px;
+                z-index: 1001;
+                background: rgba(255, 255, 255, 0.7) none repeat scroll 0% 0%;
+            }
+
+        </style>
+</head>
+<body>
+  <header class="navbar navbar-fixed-top" style="background: #ffffff">
+    <div class="navbar-brand">
+      {% include "html/common/logo.html"%}
+    </div>
+  </header>
+
+  <div class="container">
+      <h1 align="center">GEXSCOPE Report </h1>
+
+      {% if sample_summary is defined %}
+      {% include "html/common/sample_summary.html"%}
+      {% endif %}
+
+      {% if barcode_summary is defined %}
+      {% include "html/common/barcode_summary.html"%}
+      {% endif %}
+
+      {% if cutadapt_summary is defined %}
+      {% include "html/common/cutadapt_summary.html"%}
+      {% endif %}
+
+      {% if mapping_tag_summary is defined %}
+      {% include "html/tag/mapping_tag_summary.html"%}
+      {% endif %}
+
+      {% if count_tag_summary is defined %}
+      {% include "html/tag/count_tag_summary.html"%}
+      {% endif %}
+
+      {% if cluster_tsne is defined %}
+      {% include "html/tag/analysis_tag_summary.html"%}
+      {% endif %}
+    
+
+    </div>
+  </div>
+
+</body>
+</html>

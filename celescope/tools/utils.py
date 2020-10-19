@@ -201,7 +201,7 @@ def process_read(
         barcode = str(attr[0])
         umi = str(attr[1])
         seq = line2.strip()
-        if linker_dict:
+        if linker_length != 0:
             seq_linker = seq_ranges(seq, pattern_dict['L'])
             if len(seq_linker) < linker_length:
                 metrics['Reads Unmapped too Short'] += 1
@@ -216,12 +216,15 @@ def process_read(
                 seq_barcode = seq_barcode + "A" * miss_length                    
         
         # check linker
-        valid_linker = False
-        for linker_name in linker_dict:
-            if hamming_correct(linker_dict[linker_name], seq_linker):
-                valid_linker = True
-                break
-
+        if linker_length != 0:
+            valid_linker = False
+            for linker_name in linker_dict:
+                if hamming_correct(linker_dict[linker_name], seq_linker):
+                    valid_linker = True
+                    break
+        else:
+            valid_linker = True
+            
         if not valid_linker:
             metrics['Reads Unmapped Invalid Linker'] += 1
             continue
@@ -304,7 +307,7 @@ def hamming_distance(string1, string2):
     length = len(string1)
     length2 = len(string2)
     if (length != length2):
-        raise Exception("string1 and string2 do not have same length")
+        raise Exception(f"string1({length}) and string2({length2}) do not have same length")
     for i in range(length):
         if string1[i] != string2[i]:
             distance += 1
