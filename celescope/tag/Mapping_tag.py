@@ -41,7 +41,7 @@ class Mapping_tag():
 
         # process
         self.barcode_dic, self.barcode_length = read_fasta(self.barcode_fasta, equal=True)
-        if self.linker_fasta:
+        if self.linker_fasta and self.linker_fasta != 'None':
             self.linker_dic, self.linker_length = read_fasta(self.linker_fasta, equal=True)
         else:
             self.linker_dic, self.linker_length = {}, 0

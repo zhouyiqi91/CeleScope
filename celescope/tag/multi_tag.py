@@ -31,7 +31,7 @@ def main():
         help="minimum signal to noise ratio",
         default="auto")
     parser.add_argument("--fq_pattern", help="tag read2 pattern", required=True)
-    parser.add_argument("--linker_fasta", help="linker fasta", required=True)
+    parser.add_argument("--linker_fasta", help="linker fasta")
     parser.add_argument("--barcode_fasta", help="barcode fasta", required=True)
     args = parser.parse_args()
 
