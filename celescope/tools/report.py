@@ -20,7 +20,7 @@ class reporter:
     def __init__(
         self, assay, name, outdir, sample,
         stat_file=None, plot=None, parameters=None,
-        table_file=None, table_header=None
+        table_file=None, table_header=None, html_flag=True
     ):
         self.assay = assay
         self.name = name
@@ -31,10 +31,11 @@ class reporter:
         self.parameters = parameters
         self.table_file = table_file
         self.table_header = table_header
+        self.html_flag = html_flag
 
     def get_report(self):
         logger1.info(f'generate report: {self.assay} {self.name}')
-        template = env.get_template(f'html/{self.assay}/base.html')
+
         json_file = self.outdir + '/.data.json'
         if not os.path.exists(json_file):
             data = {}
@@ -61,12 +62,14 @@ class reporter:
         if self.table_header:
             data[self.name + '_table_header'] = self.table_header
 
-        report_html = "{outdir}/{sample}_report.html".format(
-            outdir=self.outdir, sample=self.sample)
-        with io.open(report_html, 'w', encoding='utf8') as fh:
-            html = template.render(data)
-            # fh.write(html.encode('utf-8'))
-            fh.write(html)
+        if self.html_flag:
+            template = env.get_template(f'html/{self.assay}/base.html')
+            report_html = "{outdir}/{sample}_report.html".format(
+                outdir=self.outdir, sample=self.sample)
+            with io.open(report_html, 'w', encoding='utf8') as fh:
+                html = template.render(data)
+                # fh.write(html.encode('utf-8'))
+                fh.write(html)
 
         with open(json_file, 'w') as fh:
             json.dump(data, fh)
