@@ -739,6 +739,22 @@ def parse_annovar(annovar_file):
     return df
 
 
+def parse_match_dir(match_dir):
+    match_dict = {}
+    match_barcode, cell_total = read_barcode_file(match_dir)
+    match_dict['match_barcode'] = match_barcode
+    match_dict['cell_total'] = cell_total
+    match_dict['tsne_coord'] = glob.glob(f'{match_dir}/*analysis/*tsne_coord.tsv')[0]
+    try:
+        match_dict['rds'] = glob.glob(f'{match_dir}/*analysis/*.rds')[0]
+    except Exception:
+        match_dict['rds'] = None
+    return match_dict
+
+
+    
+
+
 
 
 

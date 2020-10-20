@@ -13,4 +13,5 @@ ASSAY_DICT = {
     'capture_rna': 'Single Cell Capture RNA',
     'snp': 'Single Cell Variant',
     'tag': 'Single Cell tag',
+    'citeseq': 'Single Cell CITE-Seq',
 }

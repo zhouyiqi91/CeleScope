@@ -1,0 +1,36 @@
+<div class="abc" style="float: left; margin-left: 15%; margin-right:15%; width: 70%" >
+    <h2>Cells   <i class="fa fa-question-circle" onClick="toggle1(this)" style="cursor:pointer;"></i></h2>
+
+    <div class="box">
+      <div class="description" style="display: none;">
+        <p><b>Mapped Reads in Cells</b> : Mapped reads with scRNA-Seq cell barcode</p>
+        <p><b>Median UMI per Cell</b> : Median UMI per scRNA-Seq cell barcode</p>
+        <p><b>Mean UMI per Cell</b> : Mean UMI per scRNA-Seq cell barcode</p>
+      </div>
+      <table style="float: left; margin-left: 0%; margin-right:3%; width: 47%">
+        {% for item in count_cite_summary %}
+          {% if loop.index <= (loop.length+1)/2 %}
+          <tr>
+            {% for i in item %} 
+            <td>{{ i|e }}</td>
+            {% endfor %}
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </table>
+
+      <table style="float: left; margin-left: 3%; margin-right:0%; width: 47%">
+        {% for item in count_cite_summary %}
+          {% if loop.index > (loop.length+1)/2  %}
+          <tr>
+            {% for i in item %} 
+            <td>{{ i|e }}</td>
+            {% endfor %}
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </table>
+      <div class="clear" ></div>
+    </div>
+  </div>
+
