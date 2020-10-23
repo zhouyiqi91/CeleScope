@@ -715,7 +715,7 @@ def parse_annovar(annovar_file):
                 changes = attrs[9]
             else:
                 changes = attrs[7]
-            change_set = set()
+            change_list = list()
             for change in changes.split(','):
                 change_attrs = change.split(':')
                 mRNA = ''
@@ -728,8 +728,9 @@ def parse_annovar(annovar_file):
                         mRNA = f'{exon}:{base}'
                     if change_attr.startswith('p.'):
                         protein = change_attr.strip('p.')
-                change_set.add((mRNA, protein)) 
-            combine = [','.join(item) for item in list(zip(*change_set))]
+                if not (mRNA, protein) in change_list:
+                    change_list.append((mRNA, protein)) 
+            combine = [','.join(item) for item in list(zip(*change_list))]
             mRNA = combine[0]
             protein = combine[1]
             df = df.append({

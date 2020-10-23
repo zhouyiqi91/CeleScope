@@ -94,6 +94,7 @@ class analysis_variant():
         """
         self.variant_table = {}
         self.variant_table['title'] = 'Variant Table'
+        pd.set_option('display.max_colwidth', -1)
         self.variant_table['table'] = self.df_table.to_html(
             escape=False,
             index=False,
