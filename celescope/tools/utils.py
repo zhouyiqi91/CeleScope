@@ -702,7 +702,7 @@ def parse_vcf(vcf_file, cols=['chrom', 'pos', 'alleles'], infos=['DP', 'GENE', '
 
 
 def parse_annovar(annovar_file):
-    df = pd.DataFrame(columns=['mRNA', 'protein'])
+    df = pd.DataFrame(columns=['mRNA', 'protein', 'cosmic'])
     with open(annovar_file, 'rt') as f:
         index = 0
         for line in f:
@@ -713,8 +713,10 @@ def parse_annovar(annovar_file):
             func = attrs[5]
             if func == 'exonic':
                 changes = attrs[9]
+                cosmic = attrs[10]
             else:
                 changes = attrs[7]
+                cosmic = attrs[8]
             change_list = list()
             for change in changes.split(','):
                 change_attrs = change.split(':')
@@ -736,6 +738,7 @@ def parse_annovar(annovar_file):
             df = df.append({
                 'MRNA': mRNA,
                 'PROTEIN': protein,
+                'COSMIC': cosmic,
             }, ignore_index=True)
     return df
 

@@ -67,7 +67,7 @@ class analysis_variant():
         self.df_table_full = df_table
         df_table_full_file = f'{self.outdir}/{self.sample}_variant_table.tsv'
         self.df_table_full.to_csv(df_table_full_file, sep='\t')
-        cols = ['CHROM', 'POS', 'GENE', 'ALLELES', 'MRNA', 'PROTEIN', 'DP', 'GT', 'INDEX', 'cluster', 'NCELL']
+        cols = ['CHROM', 'POS', 'GENE', 'ALLELES', 'MRNA', 'PROTEIN', 'COSMIC', 'DP', 'GT', 'INDEX', 'cluster', 'NCELL']
         df_table = df_table.loc[:, cols]
         df_table.rename(columns={'cluster':'CLUSTER'}, inplace=True)
         self.df_table = df_table
@@ -109,6 +109,7 @@ class analysis_variant():
         outdir=self.outdir + '/..')
         t.get_report()
 
+    @log
     def annovar(self):
 
         # config
@@ -142,6 +143,7 @@ class analysis_variant():
             f'-out {self.outdir}/{self.sample} '
             f'--otherinfo '
         )
+        analysis_variant.annovar.logger.info(cmd)
         subprocess.check_call(cmd, shell=True)
 
         # df
