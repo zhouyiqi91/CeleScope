@@ -15,6 +15,7 @@ def STAR_virus(args):
     input_read = args.input_read
     virus_genomeDir = args.virus_genomeDir
     thread = args.thread
+    outFilterMatchNmin = args.outFilterMatchNmin
 
     # check dir
     if not os.path.exists(outdir):
@@ -59,3 +60,4 @@ def get_opts_STAR_virus(parser, sub_program):
         '--virus_genomeDir',
         help='virus genome dir',
         required=True)
+    parser.add_argument("--outFilterMatchNmin", help='STAR outFilterMatchNmin', default=35)

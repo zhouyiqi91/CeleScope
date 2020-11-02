@@ -1,39 +1,17 @@
 import os
-from celescope.tools.utils import format_number, log
+from celescope.tools.utils import format_number, log, STAR_util
 
 
 @log
 def mapping_mut(args):
-
-    sample = args.sample
-    outdir = args.outdir
-    fq = args.fq
-    indel_genomeDir = args.indel_genomeDir
-    runThreadN = args.thread
-
-    # check dir
-    if not os.path.exists(outdir):
-        os.system('mkdir -p %s' % (outdir))
-
-    out_prefix = f'{outdir}/{sample}_'
-    out_BAM = out_prefix + "Aligned.sortedByCoord.out.bam"
-
-    cmd = f"STAR \
- --genomeDir {indel_genomeDir} \
- --readFilesIn {fq}\
- --readFilesCommand zcat\
- --outSAMtype BAM SortedByCoordinate\
- --runThreadN {runThreadN}\
- --limitBAMsortRAM 10000000000\
- --outFileNamePrefix {out_prefix}"
-
-    mapping_mut.logger.info(cmd)
-    os.system(cmd)
-
-    # samtools index
-    cmd = "samtools index {out_BAM}".format(out_BAM=out_BAM)
-    mapping_mut.logger.info(cmd)
-    os.system(cmd)
+    STAR_util(
+        args.sample,
+        args.outdir,
+        args.input_read,
+        args.indel_genomeDir,
+        args.thread,
+        args.outFilterMatchNmin,
+    )
 
 
 def get_opts_mapping_mut(parser, sub_program):
@@ -47,3 +25,4 @@ def get_opts_mapping_mut(parser, sub_program):
         help='insertion or deletion STAR indexed genome directory',
         required=True)
     parser.add_argument("--thread", help='STAR thread', default=1)
+    parser.add_argument("--outFilterMatchNmin", help='STAR outFilterMatchNmin', default=35)

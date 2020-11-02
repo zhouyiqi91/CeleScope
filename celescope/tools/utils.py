@@ -756,6 +756,41 @@ def parse_match_dir(match_dir):
     return match_dict
 
 
+def STAR_util(
+    sample,
+    outdir,
+    input_read,
+    genomeDir,
+    runThreadN,
+    outFilterMatchNmin,
+):
+
+
+    # check dir
+    if not os.path.exists(outdir):
+        os.system('mkdir -p %s' % (outdir))
+
+    out_prefix = f'{outdir}/{sample}_'
+    out_BAM = out_prefix + "Aligned.sortedByCoord.out.bam"
+
+    cmd = f"STAR \
+ --genomeDir {genomeDir} \
+ --readFilesIn {input_read}\
+ --readFilesCommand zcat\
+ --outSAMtype BAM SortedByCoordinate\
+ --runThreadN {runThreadN}\
+ --limitBAMsortRAM 10000000000\
+ --outFilterMatchNmin {outFilterMatchNmin}\
+ --outFileNamePrefix {out_prefix}"
+
+    STAR_util.logger.info(cmd)
+    os.system(cmd)
+
+    cmd = "samtools index {out_BAM}".format(out_BAM=out_BAM)
+    STAR_util.logger.info(cmd)
+    os.system(cmd)
+
+
     
 
 
