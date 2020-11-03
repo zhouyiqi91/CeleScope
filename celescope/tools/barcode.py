@@ -11,7 +11,7 @@ import pandas as pd
 from collections import defaultdict, Counter
 from itertools import combinations, permutations, islice
 from xopen import xopen
-from celescope.tools.utils import format_number, log, seq_ranges, read_fasta, genDict
+from celescope.tools.utils import format_number, log, seq_ranges, read_fasta, genDict, format_stat
 from celescope.tools.report import reporter
 from celescope.tools.__init__ import __PATTERN_DICT__
 
@@ -371,15 +371,16 @@ def barcode(args):
     fh3.close()
 
     # logging
+    def cal_percent(x): return "{:.2%}".format((x + 0.0) / total_num)
     if total_num % 1000000 != 0:
         barcode.logger.info(
             f'processed reads: {format_number(total_num)}. '
             f'valid reads: {format_number(clean_num)}. '
         )
 
-    barcode.logger.info('no_linker:',no_linker_num)
-    barcode.logger.info('no_barcode:',no_barcode_num)
-    barcode.logger.info('no_polyT:',no_polyT_num)
+    barcode.logger.info(f'no_linker:{format_stat(no_linker_num, total_num)}')
+    barcode.logger.info(f'no_barcode:{format_stat(no_barcode_num, total_num)}')
+    barcode.logger.info(f'no_polyT:{format_stat(no_polyT_num, total_num)}')
 
     if clean_num == 0:
         raise Exception(
@@ -392,7 +393,8 @@ def barcode(args):
         for cb in valid_count_dic:
             total_umi += len(valid_count_dic[cb])
             total_valid_read += sum(valid_count_dic[cb].values())
-        barcode.logger.info("total umi:"+str(total_umi))
+        
+        barcode.logger.info(f"total umi:"+str(total_umi))
         barcode.logger.info("total valid read:"+str(total_valid_read))
         barcode.logger.info("reads without probe:"+str(reads_without_probe))
 
