@@ -377,6 +377,10 @@ def barcode(args):
             f'valid reads: {format_number(clean_num)}. '
         )
 
+    barcode.logger.info('no_linker:',no_linker_num)
+    barcode.logger.info('no_barcode:',no_barcode_num)
+    barcode.logger.info('no_polyT:',no_polyT_num)
+
     if clean_num == 0:
         raise Exception(
             'no valid reads found! please check the --chemistry parameter.')
