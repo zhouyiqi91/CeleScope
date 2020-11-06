@@ -141,11 +141,13 @@ class Count_tag():
         ))
 
         # UMI
+        tag_name = df_read_count_in_cell.columns[0]
+        print(tag_name)
         df_UMI_in_cell = df_read_count_in_cell.reset_index().groupby([
-            'barcode', 'barcode_name']).agg({'UMI': 'count'})
+            'barcode', tag_name]).agg({'UMI': 'count'})
         df_UMI_in_cell = df_UMI_in_cell.reset_index()
         df_UMI_in_cell = df_UMI_in_cell.pivot(
-            index='barcode', columns='barcode_name', values='UMI')
+            index='barcode', columns=tag_name, values='UMI')
         df_cell = pd.DataFrame(index=self.match_barcode)
         df_UMI_cell = pd.merge(
             df_cell,

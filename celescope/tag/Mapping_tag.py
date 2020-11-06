@@ -82,15 +82,15 @@ class Mapping_tag():
         # write dic to pandas df
         rows = []
         for barcode in self.res_dic:
-            for SMK_barcode_name in self.res_dic[barcode]:
-                for umi in self.res_dic[barcode][SMK_barcode_name]:
-                    rows.append([barcode, SMK_barcode_name, umi,
-                                 self.res_dic[barcode][SMK_barcode_name][umi]])
+            for tag_name in self.res_dic[barcode]:
+                for umi in self.res_dic[barcode][tag_name]:
+                    rows.append([barcode, tag_name, umi,
+                                 self.res_dic[barcode][tag_name][umi]])
         df_read_count = pd.DataFrame(rows)
         df_read_count.rename(
             columns={
                 0: "barcode",
-                1: "barcode_name",
+                1: "tag_name",
                 2: "UMI",
                 3: "read_count"},
             inplace=True)
@@ -120,9 +120,9 @@ class Mapping_tag():
 
     def tag_count(self):
         for barcode in self.res_dic:
-            for SMK_barcode_name in self.res_dic[barcode]:
-                self.res_sum_dic[barcode][SMK_barcode_name] = len(
-                    self.res_dic[barcode][SMK_barcode_name])
+            for tag_name in self.res_dic[barcode]:
+                self.res_sum_dic[barcode][tag_name] = len(
+                    self.res_dic[barcode][tag_name])
 
         df_umi_count = pd.DataFrame(self.res_sum_dic)
         df_umi_count = df_umi_count.T
