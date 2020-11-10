@@ -1,0 +1,146 @@
+
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/dataTables.jqueryui.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"> 
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/dataTables.jqueryui.min.css"> 
+<script>
+    $(document).ready(function () {
+            var table = $('#marker_gene_table').DataTable();
+            var indexOfMyCol = 0 ;
+            var collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+    $("#marker_gene_table thead th").each( function ( i ) {
+        if (i==indexOfMyCol){
+
+          var select = $('<select><option value=""></option></select>')
+            .appendTo( $(this).empty() )
+            .on( 'change', function () {
+                var pattern = ""
+                if ($(this).val()!="") {(pattern="^"+$(this).val() +"$");}
+                table.column( i )
+                .search(input=pattern,  regex=true)
+                .draw();
+            } );
+ 
+        table.column( i).data().unique().sort(collator.compare).each( function ( d, j ) {
+            select.append( '<option value="'+d+'">'+d+'</option>' )
+        } );
+    }
+    } );
+    });
+</script>
+
+<div class="abc" style="float: left; margin-left: 15%; margin-right:15%; width: 70%" >
+    <h2>Analysis   <i class="fa fa-question-circle" onClick="toggle1(this)" style="cursor:pointer;"></i></h2>
+    <div class="box">
+        <div class="description" style="display: none;">
+            <p><b>Top Marker Genes by Cluster</b> : differential expression analysis based on the non-parameteric Wilcoxon rank sum test.</p>
+            <p> avg_logFC : log fold-change of the average expression between the cluster and the rest of the sample.</p>
+            <p> pct.1 : The percentage of cells where the gene is detected in the cluster.</p>
+            <p> pct.2 : The percentage of cells where the gene is detected in the rest of the sample.</p>
+            <p> p_val_adj : Adjusted p-value, based on bonferroni correction using all genes in the dataset.</p>
+        </div>
+      <div id="cluster_tsne" style="float: left; margin-left: 3%; margin-top: 1%;margin-right:0%; width: 47%">
+        <script>
+            var data = []
+            {% for cluster_item in cluster_tsne %}
+                var x_coord = {{cluster_item["tSNE_1"]}};
+                var y_coord = {{cluster_item["tSNE_2"]}};
+                var trace = {
+                    x: x_coord,
+                    y: y_coord,
+                    name: '{{cluster_item["name"]}}',
+                    mode: 'markers',
+                    marker: {"opacity": 0.9, "size": 4},
+                }
+                data.push(trace);
+            {% endfor %}
+
+            var layout = {
+
+                hovermode:"closest", 
+                title: 't-SNE plot Colored by Clusters', 
+                xaxis: {
+                    zeroline: true,
+                    showline: false,
+                    type: "linear",
+                    title: "t-SNE1"
+                },
+                yaxis: {
+                    zeroline: true,
+                    showline: false,
+                    type: "linear",
+                    title: "t-SNE2"
+                },
+            }
+
+            var config = { 
+                "displayModeBar": true, 
+                "staticPlot": false, 
+                "showAxisDragHandles": false, 
+                "modeBarButtons": [["toImage", "resetScale2d"]], 
+                "scrollZoom": false,
+                "displaylogo": false, 
+            }
+            Plotly.newPlot('cluster_tsne', data, layout, config);
+        </script>       
+      </div>
+      
+      <div id="feature_tsne" style="float: left; margin-left: 3%; margin-top: 1%;margin-right:0%; width: 47%">
+        <script>
+            var data = []
+            {% for cluster_item in feature_tsne %}
+                var x_coord = {{cluster_item["tSNE_1"]}};
+                var y_coord = {{cluster_item["tSNE_2"]}};
+                var trace = {
+                    x: x_coord,
+                    y: y_coord,
+                    name: '{{cluster_item["name"]}}',
+                    mode: 'markers',
+                    marker: {"opacity": 0.9, "size": 4},
+                }
+                data.push(trace);
+            {% endfor %}
+
+            var layout = {
+
+                hovermode:"closest", 
+                title: 't-SNE plot Colored by tag', 
+                xaxis: {
+                    zeroline: true,
+                    showline: false,
+                    type: "linear",
+                    title: "t-SNE1"
+                },
+                yaxis: {
+                    zeroline: true,
+                    showline: false,
+                    type: "linear",
+                    title: "t-SNE2"
+                },
+            }
+
+            var config = { 
+                "displayModeBar": true, 
+                "staticPlot": false, 
+                "showAxisDragHandles": false, 
+                "modeBarButtons": [["toImage", "resetScale2d"]], 
+                "scrollZoom": false,
+                "displaylogo": false, 
+            }
+            Plotly.newPlot('feature_tsne', data, layout, config);
+        </script>        
+      </div>
+
+      <hr />
+
+        <h3>Top Marker Genes by Cluster</h3>
+        <div style=" margin-left: 3%; margin-right:3%;">
+            {{marker_gene_table | safe}}
+        </div>
+        
+
+
+      <div class="clear" ></div>
+    </div>
+  </div>

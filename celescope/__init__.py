@@ -14,4 +14,5 @@ ASSAY_DICT = {
     'snp': 'Single Cell Variant',
     'tag': 'Single Cell tag',
     'citeseq': 'Single Cell CITE-Seq',
+    'tcr_fl': 'Single Cell full length TCR',
 }
