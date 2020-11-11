@@ -58,8 +58,9 @@ def split_fq(args):
     nCell = args.nCell
     outdir = args.outdir
     sample = args.sample
+    match_dir = args.match_dir
 
-    if args.match_dir:
+    if match_dir and match_dir != 'None':
         barcodes, _nCell = read_barcode_file(args.match_dir)
     else:
         barcodes = ''
