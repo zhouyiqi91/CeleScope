@@ -100,7 +100,7 @@ def multi_opts(assay):
             4th col: Cell number or match_dir, optional;
         ''',
         required=True)
-    parser.add_argument('--chemistry', choices=__PATTERN_DICT__.keys(), help='chemistry version')
+    parser.add_argument('--chemistry', choices=__PATTERN_DICT__.keys(), help='chemistry version', default='auto')
     parser.add_argument('--whitelist', help='cellbarcode list')
     parser.add_argument('--linker', help='linker')
     parser.add_argument('--pattern', help='read1 pattern')
