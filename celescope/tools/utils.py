@@ -791,6 +791,32 @@ def STAR_util(
     os.system(cmd)
 
 
+def get_scope_bc(bctype):
+    import celescope
+    root_path = os.path.dirname(celescope.__file__)
+    linker_f = glob.glob(f'{root_path}/data/chemistry/{bctype}/linker*')[0]
+    whitelist_f = f'{root_path}/data/chemistry/{bctype}/bclist'
+    return linker_f, whitelist_f
+
+@log
+def parse_pattern(pattern):
+    # 解析接头结构，返回接头结构字典
+    # key: 字母表示的接头, value: 碱基区间列表
+    # eg.: C8L10C8L10C8U8T30
+    # defaultdict(<type 'list'>:
+    # {'C': [[0, 8], [18, 26], [36, 44]], 'U': [[44, 52]], 'L': [[8, 18], [26, 36]], 'T': [[52, 82]]})
+    pattern_dict = defaultdict(list)
+    p = re.compile(r'([CLUNT])(\d+)')
+    tmp = p.findall(pattern)
+    if not tmp:
+        parse_pattern.logger.error(f'Invalid pattern: {pattern}')
+        sys.exit()
+    start = 0
+    for item in tmp:
+        end = start + int(item[1])
+        pattern_dict[item[0]].append([start, end])
+        start = end
+    return pattern_dict
     
 
 

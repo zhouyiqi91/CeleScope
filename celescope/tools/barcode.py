@@ -14,6 +14,7 @@ from xopen import xopen
 from celescope.tools.utils import format_number, log, seq_ranges, read_fasta, genDict, format_stat
 from celescope.tools.report import reporter
 from celescope.tools.__init__ import __PATTERN_DICT__
+from .Chemistry import Chemistry
 
 barcode_corrected_num = 0
 
@@ -108,8 +109,8 @@ def parse_pattern(pattern):
 def get_scope_bc(bctype):
     import celescope
     root_path = os.path.dirname(celescope.__file__)
-    linker_f = glob.glob(f'{root_path}/data/{bctype}/linker*')[0]
-    whitelist_f = f'{root_path}/data/{bctype}/bclist'
+    linker_f = glob.glob(f'{root_path}/data/chemistry/{bctype}/linker*')[0]
+    whitelist_f = f'{root_path}/data/chemistry/{bctype}/bclist'
     return linker_f, whitelist_f
 
 
@@ -186,23 +187,66 @@ def check_seq(seq_file, pattern_dict, seq_abbr):
 
 
 @log
+def merge_fastq(fq1, fq2, sample, outdir):
+    '''
+    merge fastq if len(fq1) > 1
+    '''
+    fq1_list = fq1.split(",")
+    fq2_list = fq2.split(",")
+    if len(fq1_list) == 0:
+        raise Exception('empty fastq file path!')
+    elif len(fq1_list) == 1:
+        fq1_file, fq2_file = fq1, fq2
+    else:
+        fastq_dir = f'{outdir}/../merge_fastq'
+        if not os.path.exists(fastq_dir):
+            os.system('mkdir -p %s' % fastq_dir)
+        fq1_file = f"{fastq_dir}/{sample}_1.fq.gz"
+        fq2_file = f"{fastq_dir}/{sample}_2.fq.gz"
+        fq1_files = " ".join(fq1_list)
+        fq2_files = " ".join(fq2_list)
+        fq1_cmd = f"cat {fq1_files} > {fq1_file}"
+        fq2_cmd = f"cat {fq2_files} > {fq2_file}"
+        merge_fastq.logger.info(fq1_cmd)
+        os.system(fq1_cmd)
+        merge_fastq.logger.info(fq2_cmd)
+        os.system(fq2_cmd)
+    return fq1_file, fq2_file
+ 
+
+@log
 def barcode(args):
+    # init
+    outdir = args.outdir
+    sample = args.sample
+    fq1 = args.fq1
+    fq2 = args.fq2
 
     # check dir
     if not os.path.exists(args.outdir):
         os.system('mkdir -p %s' % args.outdir)
 
-    bc_pattern = __PATTERN_DICT__[args.chemistry]
+    # merge fastq
+    fq1_file, fq2_file = merge_fastq(fq1, fq2, sample, outdir)
+
+    # get chemistry
+    if args.chemistry == 'auto':
+        ch = Chemistry(fq1_file)
+        chemistry = ch.get_chemistry()
+    else:
+        chemistry = args.chemistry
+
+    # get linker and whitelist
+    bc_pattern = __PATTERN_DICT__[chemistry]
     if (bc_pattern):
-        (linker, whitelist) = get_scope_bc(args.chemistry)
+        (linker, whitelist) = get_scope_bc(chemistry)
     else:
         bc_pattern = args.pattern
         linker = args.linker
         whitelist = args.whitelist
     if (not linker) or (not whitelist) or (not bc_pattern):
-        barcode.logger.error("invalid chemistry or [pattern,linker,whitelist]")
-        sys.exit()
-
+        raise Exception("invalid chemistry or [pattern,linker,whitelist]")
+        
     # parse pattern to dict, C8L10C8L10C8U8
     # defaultdict(<type 'list'>, {'C': [[0, 8], [18, 26], [36, 44]], 'U':
     # [[44, 52]], 'L': [[8, 18], [26, 36]]})
@@ -226,31 +270,8 @@ def barcode(args):
     barcode_dict = generate_seq_dict(whitelist, n=1)
     linker_dict = generate_seq_dict(linker, n=2)
 
-    fq1_list = args.fq1.split(",")
-    fq2_list = args.fq2.split(",")
-    # merge multiple fastq files
-    if len(fq1_list) > 1:
-        barcode.logger.info("merge fastq with same sample name...")
-        fastq_dir = args.outdir + "/../merge_fastq"
-        if not os.path.exists(fastq_dir):
-            os.system('mkdir -p %s' % fastq_dir)
-        fastq1_file = f"{fastq_dir}/{args.sample}_1.fq.gz"
-        fastq2_file = f"{fastq_dir}/{args.sample}_2.fq.gz"
-        fq1_files = " ".join(fq1_list)
-        fq2_files = " ".join(fq2_list)
-        fq1_cmd = f"cat {fq1_files} > {fastq1_file}"
-        fq2_cmd = f"cat {fq2_files} > {fastq2_file}"
-        barcode.logger.info(fq1_cmd)
-        os.system(fq1_cmd)
-        barcode.logger.info(fq2_cmd)
-        os.system(fq2_cmd)
-        barcode.logger.info("merge fastq done.")
-    else:
-        fastq1_file = args.fq1
-        fastq2_file = args.fq2
-
-    fh1 = xopen(fastq1_file)
-    fh2 = xopen(fastq2_file)
+    fh1 = xopen(fq1_file)
+    fh2 = xopen(fq2_file)
     out_fq2 = args.outdir + '/' + args.sample + '_2.fq.gz'
     fh3 = xopen(out_fq2, 'w')
 
@@ -259,12 +280,12 @@ def barcode(args):
     Barcode_dict = defaultdict(int)
 
     if args.nopolyT:
-        fh1_without_polyT = xopen(args.outdir + '/noPolyT_1.fq', 'w')
-        fh2_without_polyT = xopen(args.outdir + '/noPolyT_2.fq', 'w')
+        fh1_without_polyT = xopen(outdir + '/noPolyT_1.fq', 'w')
+        fh2_without_polyT = xopen(outdir + '/noPolyT_2.fq', 'w')
 
     if args.noLinker:
-        fh1_without_linker = xopen(args.outdir + '/noLinker_1.fq', 'w')
-        fh2_without_linker = xopen(args.outdir + '/noLinker_2.fq', 'w')
+        fh1_without_linker = xopen(outdir + '/noLinker_1.fq', 'w')
+        fh2_without_linker = xopen(outdir + '/noLinker_2.fq', 'w')
 
     bool_probe = False
     if args.probe_file and args.probe_file != 'None':
@@ -378,9 +399,9 @@ def barcode(args):
             f'valid reads: {format_number(clean_num)}. '
         )
 
-    barcode.logger.info(f'no_linker:{format_stat(no_linker_num, total_num)}')
-    barcode.logger.info(f'no_barcode:{format_stat(no_barcode_num, total_num)}')
-    barcode.logger.info(f'no_polyT:{format_stat(no_polyT_num, total_num)}')
+    barcode.logger.info(f'no_linker: {no_linker_num}')
+    barcode.logger.info(f'no_barcode: {no_barcode_num}')
+    barcode.logger.info(f'no_polyT: {no_polyT_num}')
 
     if clean_num == 0:
         raise Exception(
