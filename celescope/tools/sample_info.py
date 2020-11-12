@@ -9,6 +9,7 @@ from celescope.__init__ import __VERSION__, ASSAY_DICT
 from celescope.tools.utils import log
 from celescope.tools.report import reporter
 from celescope.tools.__init__ import __PATTERN_DICT__
+from .Chemistry import Chemistry
 
 
 @log
@@ -19,9 +20,14 @@ def sample_info(args):
     version = __VERSION__
     outdir = args.outdir
     chemistry = args.chemistry
-    if not chemistry:
-        chemistry = "Customized"
+    fq1 = args.fq1
+    fq1_file0 = fq1.split(',')[0]
     #transcriptome = args.genomeDir.split("/")[-1]
+
+    # get chemistry
+    if chemistry == 'auto':
+        ch = Chemistry(fq1_file0)
+        chemistry = ch.get_chemistry()
 
     if not os.path.exists(outdir):
         os.system('mkdir -p %s' % outdir)
@@ -42,6 +48,7 @@ def sample_info(args):
         stat_file=stat_file,
         outdir=outdir + '/..')
     t.get_report()
+    return chemistry
 
 
 def get_opts_sample(parser, sub_program):
@@ -49,4 +56,6 @@ def get_opts_sample(parser, sub_program):
         parser.add_argument('--outdir', help='output dir', required=True)
         parser.add_argument('--sample', help='sample name', required=True)
         parser.add_argument('--assay', help='assay', required=True)
-    parser.add_argument('--chemistry', choices=__PATTERN_DICT__.keys(), help='chemistry version')
+        parser.add_argument('--fq1', help='read1 fq file', required=True)
+    parser.add_argument('--chemistry', choices=__PATTERN_DICT__.keys(), help='chemistry version', default='auto')
+    
