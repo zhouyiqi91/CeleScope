@@ -21,6 +21,8 @@ def main():
     # parser
     parser = multi_opts(assay)
     parser.add_argument('--thread', help='thread', default=6)
+    parser.add_argument('--genomeDir', help='genome index dir', required=True)
+    parser.add_argument('--starMem', help='starMem', default=30)
     args = parser.parse_args()
 
     # read args
@@ -42,6 +44,8 @@ def main():
 
     # custom args
     thread = args.thread
+    genomeDir = args.genomeDir
+    starMem = args.starMem
 
     # mk log dir
     logdir = outdir + '/log'
@@ -51,6 +55,7 @@ def main():
     sjm_cmd = 'log_dir %s\n' % (logdir)
     sjm_order = ''
     shell = ''
+    
 
     # outdir dict
     for sample in fq_dict:
@@ -101,12 +106,29 @@ def main():
         shell += cmd + '\n'
         last_step = step
 
-        # mapping_hla
-        step = 'mapping_hla'
+        # STAR 
+        
+        step = "STAR"
         fq = f'{outdir_dic["cutadapt"]}/{sample}_clean_2.fq.gz'
         cmd = (
             f'{app} {assay} {step} '
             f'--fq {fq} --sample {sample} '
+            f'--genomeDir {genomeDir} --thread {thread} ' 
+            f'--outdir {outdir_dic[step]} --assay {assay} '
+        )
+        sjm_cmd += generate_sjm(cmd, f'{step}_{sample}', conda, m=starMem, x=thread)
+        sjm_order += f'order {step}_{sample} after {last_step}_{sample}\n'
+        shell += cmd + '\n'
+        last_step = step
+        
+
+        
+        # mapping_hla
+        step = 'mapping_hla'
+        bam = f'{outdir_dic["STAR"]}/{sample}_Aligned.sortedByCoord.out.bam'
+        cmd = (
+            f'{app} {assay} {step} '
+            f'--bam {bam} --sample {sample} '
             f'--thread {thread} '
             f'--match_dir {match_dict[sample]} '
             f'--outdir {outdir_dic[step]} --assay {assay} '
@@ -115,6 +137,7 @@ def main():
         sjm_order += f'order {step}_{sample} after {last_step}_{sample}\n'
         shell += cmd + '\n'
         last_step = step
+        
 
      # merged report
     if mod == 'sjm':

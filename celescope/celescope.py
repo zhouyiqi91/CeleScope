@@ -359,27 +359,19 @@ def main():
     get_opts_cutadapt(parser_cutadapt, True)
     parser_cutadapt.set_defaults(func=cutadapt)
 
+    parser_STAR = subparsers_hla_sub.add_parser('STAR')
+    get_opts_STAR(parser_STAR, True)
+    parser_STAR.set_defaults(func=STAR)
+
     from celescope.hla.mapping_hla import mapping_hla, get_opts_mapping_hla
     parser_mapping_hla = subparsers_hla_sub.add_parser('mapping_hla')
     get_opts_mapping_hla(parser_mapping_hla, True)
     parser_mapping_hla.set_defaults(func=mapping_hla)
 
-    '''
-    from celescope.hla.count_hla import count_hla, get_opts_count_hla
-    parser_count_hla = subparsers_hla_sub.add_parser('count_hla')
-    get_opts_count_hla(parser_count_hla, True)
-    parser_count_hla.set_defaults(func=count_hla)
+    args = parser.parse_args()
+    args.func(args)
 
-    from celescope.hla.run import run
-    parser_run = subparsers_fusion_sub.add_parser(
-        'run', help='run all steps', conflict_handler='resolve')
-    get_opts_sample(parser_run, False)
-    get_opts_barcode(parser_run, False)
-    get_opts_cutadapt(parser_run, False)
-    get_opts_mapping_hla(parser_run, False)
-    get_opts_count_hla(parser_run, False)
-    parser_run.set_defaults(func=run)
-    '''
+
 
     # capture_rna
     assay = 'capture_rna'

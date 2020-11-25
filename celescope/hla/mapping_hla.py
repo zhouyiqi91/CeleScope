@@ -8,45 +8,8 @@ from celescope.tools.utils import format_number, log, read_barcode_file
 
 
 @log
-def razer(fq, outdir, sample, thread):
-
-    # get ref
-    root_path = os.path.dirname(celescope.__file__)
-    ref = f'{root_path}/data/HLA/hla_reference_rna.fasta'
-
-    # mkdir
-    out_bam_dir = f'{outdir}/bam/'
-    if not os.path.exists(out_bam_dir):
-        os.mkdir(out_bam_dir)
-
-    # out_bam
-    out_bam = f'{outdir}/bam/{sample}.bam'
-
-    # run
-    cmd = (
-        f'razers3 -i 97 -m 99999 --distance-range 0 -pa '
-        f'-tc {thread} '
-        f'-o {out_bam} '
-        f'{ref} '
-        f'{fq} '
-    )
-    razer.logger.info(cmd)
-    os.system(cmd)
-    return out_bam
-
-
-@log
-def split_bam(out_bam, barcodes, outdir, sample):
-    '''
-    input:
-        out_bam: from razers3
-        barcodes: cell barcodes
-    ouput:
-        bam_dict: assign reads to cell barcodes and UMI
-        count_dict: UMI counts per cell
-        index: assign index(1-based) to cells
-    '''
-
+def split_bam(bam,barcodes, outdir, sample):
+    
     # init
     count_dict = defaultdict(dict)
     bam_dict = defaultdict(dict)
@@ -55,7 +18,7 @@ def split_bam(out_bam, barcodes, outdir, sample):
 
     # read bam and split
     split_bam.logger.info('reading bam...')
-    samfile = pysam.AlignmentFile(out_bam, "rb")
+    samfile = pysam.AlignmentFile(bam, "rb")
     header = samfile.header
     for read in samfile:
         attr = read.query_name.split('_')
@@ -109,21 +72,32 @@ def split_bam(out_bam, barcodes, outdir, sample):
     df_temp.to_csv(count_file, sep='\t', index=False)
 
     return index_file, count_file
+    
 
 
 def sub_typing(bam):
-
+    
     outdir = os.path.dirname(bam)
-    prefix = os.path.basename(bam).strip('.bam')
     cmd = (
-        f'OptiTypePipeline.py '
-        f'--input {bam} '
-        f'--rna '
+        f'arcasHLA extract '
+        f'{bam} '
         f'--outdir {outdir} '
-        f'--prefix {prefix} '
-        f'>/dev/null 2>&1 '
     )
     os.system(cmd)
+
+def sub_typing2(fastq):
+    
+    outdir = os.path.join(os.path.dirname(fastq), "../..")
+    
+    cmd = (
+        f'arcasHLA genotype '
+        f'--min_count 1 '
+        f'--drop_iterations 1 '
+        f'{fastq} '  
+        f'--outdir {outdir}/genotype/ '
+    )
+    os.system(cmd)
+    
 
 
 def read_index(index_file):
@@ -139,35 +113,34 @@ def hla_typing(index_file, outdir, thread):
 
     bams = [
         f'{outdir}/cells/cell{index}/cell{index}.bam' for index in df_valid.index]
+    
     with ProcessPoolExecutor(thread) as pool:
-        for res in pool.map(sub_typing, bams):
+        for res in pool.map(sub_typing,bams):
             all_res.append(res)
 
+@log
+def hla_typing2(index_file, outdir, thread):
+    all_res = []
+    df_valid = read_index(index_file)
+    out_type_dir = f'{outdir}/genotype/'
+    if not os.path.exists(out_type_dir):
+        os.mkdir(out_type_dir)
+    
+    fastqs = [
+        f'{outdir}/cells/cell{index}/cell{index}.extracted.fq.gz' for index in df_valid.index]
+    with ProcessPoolExecutor(thread) as pool:
+        for res in pool.map(sub_typing2,fastqs):
+            all_res.append(res)
 
 @log
-def summary(index_file, outdir, sample):
+def summary(outdir):
     
-    n = 0
-    df_valid = read_index(index_file)
-    
-    for index in df_valid.index:
-        try:
-            sub_df = pd.read_csv(
-                f'{outdir}/cells/cell{index}/cell{index}_result.tsv', sep='\t', index_col=0)
-        except Exception:
-            continue
-        n += 1
-        sub_df['barcode'] = df_valid.loc[index, :]['barcode']
-        sub_df['cell_index'] = index
-        if n == 1:
-            all_df = sub_df
-        else:
-            all_df = all_df.append(sub_df, ignore_index=True)
-    all_df['Reads'] = all_df['Reads'].apply(lambda x: int(x))
-    all_df = all_df[all_df['Reads'] != 0]
-    all_df = all_df.drop('Objective', axis=1)
-    out_file = f'{outdir}/{sample}_typing.tsv'
-    all_df.to_csv(out_file, sep='\t', index=False)
+    cmd = (
+        f'arcasHLA merge '
+        f'-i {outdir}/genotype/ '
+        f'-o {outdir} '
+    )
+    os.system(cmd)
 
 
 @log
@@ -175,7 +148,7 @@ def mapping_hla(args):
 
     sample = args.sample
     outdir = args.outdir
-    fq = args.fq
+    bam = args.bam
     thread = int(args.thread)
     match_dir = args.match_dir
 
@@ -186,24 +159,25 @@ def mapping_hla(args):
     if not os.path.exists(outdir):
         os.system('mkdir -p %s' % (outdir))
 
-    # razer
-    out_bam = razer(fq, outdir, sample, thread)
+   
 
     # split bam
-    index_file, _count_file = split_bam(out_bam, barcodes, outdir, sample)
+    index_file, _count_file = split_bam(bam,barcodes, outdir, sample)
 
     # typing
     hla_typing(index_file, outdir, thread)
 
+    hla_typing2(index_file, outdir, thread)
+
     # summary
-    summary(index_file, outdir, sample)
+    summary(outdir)
 
 
 def get_opts_mapping_hla(parser, sub_program):
     if sub_program:
         parser.add_argument('--outdir', help='output dir', required=True)
         parser.add_argument('--sample', help='sample name', required=True)
-        parser.add_argument("--fq", required=True)
+        parser.add_argument("--bam", required=True)
         parser.add_argument('--assay', help='assay', required=True)
     parser.add_argument(
         "--match_dir", help="match scRNA-Seq dir", required=True)
